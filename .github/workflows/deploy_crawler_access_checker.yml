@@ -1,0 +1,59 @@
+name: crawler_access_checker Deploy
+
+# Controls when the action will run. 
+on:
+  # 対象アクションとブランチ指定
+  push:
+    branches: [develop, master]
+    paths:
+      - 'src/tools/crawler_access_checker/**'
+
+  workflow_dispatch:
+env:
+  DEPLOY_FUNCTION: 'crawler_access_checker'
+  ENTRY_POINT: 'web_access'
+  SOURCE_DIR: 'src/tools/crawler_access_checker'
+  FUNCTION_RUNTIME: 'python38'
+  FUNCTION_TIMEOUT: '60'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - name: Copy requirements file
+        run: cp .devcontainer/requirements.txt ${{ env.SOURCE_DIR }}/requirements.txt
+      - name: Develop:Deploy Functions
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          gcloud functions deploy ${{ env.DEPLOY_FUNCTION }} \
+          --runtime ${{ env.FUNCTION_RUNTIME }} \
+          --entry-point ${{ env.ENTRY_POINT }} \
+          --timeout ${{ env.FUNCTION_TIMEOUT }} \
+          --source ${{ env.SOURCE_DIR }} \
+          --trigger-http \
+          --allow-unauthenticated \
+          --set-env-vars TZ=Asia/Tokyo,CRAWLER_ENV=dev,SLACK_WEBHOOK=${{ secrets.SLACK_WEBHOOK }} \
+          --region asia-northeast1
+      - name: Staging:Deploy Functions
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          echo staging
+      - name: Production:Deploy Functions
+        if: github.ref == 'refs/heads/master'     
+        run: |
+          gcloud functions deploy ${{ env.DEPLOY_FUNCTION }} \
+          --runtime ${{ env.FUNCTION_RUNTIME }} \
+          --entry-point ${{ env.ENTRY_POINT }} \
+          --timeout ${{ env.FUNCTION_TIMEOUT }} \
+          --source ${{ env.SOURCE_DIR }} \
+          --trigger-http \
+          --allow-unauthenticated \
+          --set-env-vars TZ=Asia/Tokyo,CRAWLER_ENV=prd,SLACK_WEBHOOK=${{ secrets.SLACK_WEBHOOK }} \
+          --region asia-northeast1

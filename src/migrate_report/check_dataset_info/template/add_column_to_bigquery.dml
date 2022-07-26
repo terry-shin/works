@@ -1,0 +1,7 @@
+/* 
+サンプル：データセット名・テーブル名は環境によって変更
+ADD COLUMN {名前} {STRING|INTEGER}
+基本的にschmaから直接持ってくる 
+*/
+ALTER TABLE `{__TABLE_ID__}`
+{__ADD_COLUMN__};

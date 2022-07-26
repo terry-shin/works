@@ -1,0 +1,57 @@
+name: main_crawler Deploy
+
+# Controls when the action will run. 
+on:
+  # 対象アクションとブランチ・ディレクトリ 指定
+  push:
+   branches: [develop, master]
+   paths:
+     - 'src/main_crawler/Dockerfile'
+     - 'src/main_crawler/requirements.txt'
+     - 'src/main_crawler/shell/**'
+     - 'src/main_crawler/ssh/**'
+
+  workflow_dispatch:
+env:
+  APP_NAME: 'main_crawler'
+  IMG_NAME: 'main-crawler-image'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@master
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - name: Make ssh file
+        run: echo "${{ secrets.DEPLOY_PRIVATE_KEY }}" > ./src/${{ env.APP_NAME }}/ssh/id_rsa
+      - name: Configure docker to use the gcloud cli
+        run: gcloud auth configure-docker --quiet
+      - name: Develop:Build a docker image
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          docker build -t asia.gcr.io/${{ secrets.GCP_PROJECT }}/dev-${{ env.IMG_NAME }}:${GITHUB_SHA::7} --build-arg branch='develop' ./ 
+          docker push asia.gcr.io/${{ secrets.GCP_PROJECT }}/dev-${{ env.IMG_NAME }}:${GITHUB_SHA::7}
+        working-directory: ./src/${{ env.APP_NAME }}
+      - name: Production:Build a docker image
+        if: github.ref == 'refs/heads/master'
+        run: |
+          docker build -t asia.gcr.io/${{ secrets.GCP_PROJECT }}/prd-${{ env.IMG_NAME }}:${GITHUB_SHA::7} --build-arg branch='master' ./ 
+          docker push asia.gcr.io/${{ secrets.GCP_PROJECT }}/prd-${{ env.IMG_NAME }}:${GITHUB_SHA::7}
+        working-directory: ./src/${{ env.APP_NAME }}
+      - name: Develop:Instance Update Container Image
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          chmod 755 update_container_main_crawler.sh
+          ./update_container_main_crawler.sh dev ${{ secrets.GCP_PROJECT }} dev-${{ env.IMG_NAME }} ${GITHUB_SHA::7}
+        working-directory: .github/workflows/shell
+      - name: Production:Instance Update Container Image
+        if: github.ref == 'refs/heads/master'
+        run: |
+          chmod 755 update_container_main_crawler.sh
+          ./update_container_main_crawler.sh prd ${{ secrets.GCP_PROJECT }} prd-${{ env.IMG_NAME }} ${GITHUB_SHA::7}
+        working-directory: .github/workflows/shell

@@ -1,0 +1,51 @@
+# This is a basic workflow to help you get started with Actions
+
+name: main_crawler Unit Test
+
+# Controls when the action will run. 
+on:
+  # 対象アクションとブランチ指定
+  pull_request:
+    branches: [ master, develop ]
+    paths:
+    - 'src/main_crawler/app/**.py'
+    - 'src/main_crawler/requirements.txt '
+
+  workflow_dispatch:
+jobs:
+  # buildジョブの定義
+  pytest:
+    runs-on: ubuntu-latest
+    # 複数バージョンで動かす場合は、下記に追加
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      # リポジトリのチェックアウト
+      - uses: actions/checkout@v2
+      # Python のランタイムをセットアップする
+      # バージョンは `strategy.matrix` に並べたものを指定する
+      # See: https://github.com/actions/setup-python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # 必要ファイルをコピー
+      - name: Copy requirements file
+        run: cp src/main_crawler/requirements.txt requirements.txt
+
+      # pip周りのインストール
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # ユニットテスト実行
+      - name: Test with pytest 
+        run: |
+          cd src/main_crawler/app/tests
+          pytest -v --cov-report=term-missing --cov=src

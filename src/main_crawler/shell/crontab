@@ -1,0 +1,7 @@
+CRAWLER_ENV=__env__
+CRAWLER_TYPE=__type__
+HOST_NAME=__hostname__
+VM_ZONE=__zone__
+PROJECT_NUM=__projectnum__
+TZ=Asia/Tokyo
+__m__ * * * * /usr/local/src/works/src/main_crawler/shell/execute_crawler.sh

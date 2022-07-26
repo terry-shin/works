@@ -1,0 +1,3 @@
+A_PROJECT = '取得元GCPプロジェクト'
+
+TARGET_DATE_RANGE = 31

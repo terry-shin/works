@@ -1,0 +1,47 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Lint Check
+
+# Controls when the action will run. 
+on:
+  # 対象アクションとブランチ指定
+  pull_request:
+    branches: [ master, staging, develop ]
+    paths:
+      - '**.py'
+
+  workflow_dispatch:
+jobs:
+  # lintジョブの定義
+  lint:
+    runs-on: ubuntu-latest
+    # 複数バージョンで動かす場合は、下記で指定
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      # リポジトリのチェックアウト
+      - uses: actions/checkout@v2
+      # Python のランタイムをセットアップする
+      # バージョンは `strategy.matrix` に並べたものを指定する
+      # See: https://github.com/actions/setup-python
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # pip周りのインストール
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      # flake8によるコードチェック
+      - name: Lint with flake8
+        run: |
+          # Python 構文エラーまたは未定義の名前がある場合はビルドを停止する
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          #  循環的複雑度と一行あたりの最大文字数チェック。exit-zeroはすべてのエラーを警告として扱う。 GitHubのエディタの幅は127文字
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+

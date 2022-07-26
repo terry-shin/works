@@ -1,0 +1,51 @@
+# 自動デプロイ 設定ymlテンプレート
+name: Deploy Template
+
+# Controls when the action will run. 
+on:
+  # 対象アクションとブランチ・ディレクトリ 指定
+  #push:
+  #  branches: [develop, staging, master]
+  #  paths:
+  #    - 'sample_function/**'
+  workflow_dispatch:
+# 環境変数設定
+env:
+  DEPLOY_FUNCTION: 'Cloud Functions関数'
+  STRAGE_BUCKET: 'トリガーにするbucket'
+  ENTRY_POINT: 'エントリーポイント'
+  SOURCE_DIR: 'デプロイ対象ディレクトリ'
+  FUNCTION_TIMEOUT: '60'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{ secrets.GCP_PROJECT }}
+          service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+      - name: Copy requirements file
+        run: cp .devcontainer/requirements.txt ${{ env.SOURCE_DIR }}/requirements.txt
+      - name: Develop:Deploy Functions
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          gcloud functions deploy dev-${{ env.DEPLOY_FUNCTION }} \
+          --runtime python38 \
+          --entry-point ${{ env.ENTRY_POINT }} \
+          --timeout ${{ env.FUNCTION_TIMEOUT }} \
+          --source ${{ env.SOURCE_DIR }} \
+          --trigger-resource  dev-${{ env.STRAGE_BUCKET }} \
+          --trigger-event google.storage.object.finalize \
+          --region asia-northeast1
+      - name: Staging:Deploy Functions
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          echo staging
+      - name: Production:Deploy Functions
+        if: github.ref == 'refs/heads/master'     
+        run: |
+          echo production   

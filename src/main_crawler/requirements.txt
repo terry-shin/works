@@ -1,0 +1,13 @@
+google-cloud-pubsub == 2.2.0
+google-cloud-bigquery == 2.7.0
+google-cloud-storage == 1.35.0
+google-api-python-client == 2.0.2
+google-cloud-secret-manager == 2.4.0
+oauth2client == 4.1.3
+lxml == 4.6.5
+SQLAlchemy == 1.3.12
+PyMySQL == 0.9.3
+mysqlclient == 2.0.3
+selenium
+webdriver-manager
+pandas

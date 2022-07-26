@@ -1,0 +1,9 @@
+{
+	"name": "Python Local",
+	"context": "..",
+	"dockerFile": "Dockerfile",
+	"workspaceFolder": "/workspaces/works",
+	"extensions": [
+		"ms-python.python"
+	]
+}
